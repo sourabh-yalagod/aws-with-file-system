@@ -32,48 +32,29 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.post("/api/images", upload.array("images"), async (req, res) => {
-  const images = req.files; // Access uploaded files via `req.files`
+  const image = req.files[0]; // Access uploaded files via `req.files`
 
-  if (!images || images.length === 0) {
+  if (!image || image.length === 0) {
     return res.status(400).json({ message: "No files uploaded" });
   }
-
   const format = ".jpeg";
-  const convertedImages = [];
-
-  const convertImage = (image) => {
-    return new Promise((resolve, reject) => {
-      const outputFilename = `${
-        image.filename.split(".")[0]
-      }-${Date.now()}${format}`;
-      const outputPath = path.join(publicPath, outputFilename);
-
-      exec(`ffmpeg -i "${image.path}" "${outputPath}"`, (error) => {
-        if (error) {
-          console.error(`Error converting ${image.filename}:`, error);
-          fs.unlinkSync(image.path);
-          return reject(error);
-        }
-        convertedImages.push({
-          original: image.path,
-          converted: outputPath,
-        });
-        fs.unlinkSync(image.path);
-        setTimeout(() => fs.unlinkSync(outputPath), 2 * 60 * 1000);
-        resolve();
-      });
+  const outputPath = path.join(
+    publicPath,
+    image.originalname.split(".")[0].concat(format)
+  );
+  exec(`ffmpeg -i "${image.path}" "${outputPath}"`, (error) => {
+    if (error) {
+      console.error(`Error converting ${image.filename}:`, error);
+      fs.unlinkSync(image.path);
+      return reject(error);
+    }
+    return res.sendFile(outputPath, (error) => {
+      if (error) console.log(error);
+      fs.unlinkSync(image.path);
+      fs.unlinkSync(outputPath);
     });
-  };
-  await Promise.allSettled(images.map((image) => convertImage(image)));
-  console.log(convertedImages);
-
-  return res.status(200).json({
-    message: "Files uploaded and converted successfully",
-    output: convertedImages,
   });
 });
-
-// Start server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });

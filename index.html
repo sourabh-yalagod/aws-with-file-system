@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Display Converted Image</title>
+  </head>
+  <body>
+    <h1>Converted Image</h1>
+    <img id="convertedImg" src="" alt="Converted" style="max-width: 100%" />
+    <script>
+      fetch('/api/images', {
+        method: 'GET', // Replace with 'POST' if your API requires it
+        headers: {
+          'Content-Type': 'application/json', // Adjust headers based on API requirements
+        },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok ' + response.statusText);
+          }
+          return response.blob();
+        })
+        .then((blob) => {
+          const objectURL = URL.createObjectURL(blob);
+          document.getElementById('convertedImg').src = objectURL;
+        })
+        .catch((error) => {
+          console.error('There was a problem with the fetch operation:', error);
+        });
+    </script>
+  </body>
+</html>
